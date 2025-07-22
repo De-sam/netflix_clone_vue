@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import LoginView from "@/views/Login.vue";
 import LoginWithCodeView from "@/views/LoginWithCode.vue";
 import TwoFactorView from "@/views/TwoFactor.vue";
+import VerifyView from "@/views/VerifyView.vue";
+import HomeView from "@/views/HomeView.vue";
 
 const routes = [
   {
@@ -22,6 +24,16 @@ const routes = [
     path: "/2fa",
     name: "TwoFactor",
     component: TwoFactorView,
+  },
+  {
+    path: "/verify",
+    name: "Verify",
+    component: VerifyView,
+  },
+  {
+    path: "/home",
+    name: "Home",
+    component: HomeView,
   },
 ];
 

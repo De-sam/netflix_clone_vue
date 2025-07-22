@@ -4,22 +4,40 @@
     <logo-header />
     <div class="login-container">
       <div class="login-card">
-        <h1>Sign In with Code</h1>
-
+        <div v-if="success" class="success-box">
+          {{ success }}
+        </div>
         <div v-if="error" class="error-box">
           {{ error }}
         </div>
 
         <form @submit.prevent="verifyCode">
+          <div class="text-container">
+            <h1>Verify Your Code</h1>
+            <h2>Enter the code we just sent</h2>
+            <p class="instruction">
+              We sent a sign-in code to samsoncoded@gmail.com. The code will
+              expire in 15 minutes.
+            </p>
+          </div>
           <div class="form-group">
-            <input
-              v-model="username"
-              type="text"
-              placeholder="Email or phone number"
-              @input="validateEmailOrPhone"
-              :class="{ 'error-border': emailError }"
-            />
-            <div v-if="emailError" class="error-text">
+            <div class="otp-container">
+              <input
+                v-for="(digit, index) in digits"
+                :key="index"
+                v-model="digits[index]"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                class="otp-input"
+                :class="{ 'error-border': codeError }"
+                @input="handleInput($event, index)"
+                @keydown="handleKeydown($event, index)"
+                @paste="index === 0 ? handlePaste($event) : null"
+                ref="inputs"
+              />
+            </div>
+            <div v-if="codeError" class="error-text">
               <svg
                 class="error-icon"
                 viewBox="0 0 24 24"
@@ -31,13 +49,13 @@
                   d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
                 />
               </svg>
-              Please enter a valid email or phone number
+              Please enter a valid 4-digit code
             </div>
           </div>
 
           <button type="submit" class="btn" :disabled="loading">
             <span v-if="loading" class="spinner"></span>
-            <span v-else>Send Sign-In-Code</span>
+            <span v-else>Verify</span>
           </button>
 
           <div class="or-divider">OR</div>
@@ -72,33 +90,61 @@ import LogoHeader from "../components/LogoHeader.vue";
 import AuthFooter from "../components/AuthFooter.vue";
 
 export default {
-  name: "LoginWithCode",
+  name: "VerifyView",
   components: {
     LogoHeader,
     AuthFooter,
   },
   data() {
     return {
-      username: "",
+      digits: ["", "", "", ""],
       error: "",
-      emailError: "",
+      codeError: "",
+      success: "",
       loading: false,
     };
   },
   methods: {
-    validateEmailOrPhone() {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^\+?\d{10,14}$/;
-      if (!emailRegex.test(this.username) && !phoneRegex.test(this.username)) {
-        this.emailError = "Please enter a valid email or phone number";
+    validateCode() {
+      const code = this.digits.join("");
+      const codeRegex = /^\d{4}$/;
+      if (!codeRegex.test(code)) {
+        this.codeError = "Please enter a valid 4-digit code";
       } else {
-        this.emailError = "";
+        this.codeError = "";
+      }
+    },
+    handleInput(event, index) {
+      const value = event.target.value;
+      if (value && !/^\d$/.test(value)) {
+        this.digits[index] = "";
+        return;
+      }
+      if (value && index < 3) {
+        this.$refs.inputs[index + 1].focus();
+      }
+      this.validateCode();
+    },
+    handleKeydown(event, index) {
+      if (event.key === "Backspace" && !this.digits[index] && index > 0) {
+        this.$refs.inputs[index - 1].focus();
+      }
+    },
+    handlePaste(event) {
+      event.preventDefault();
+      const pastedData = event.clipboardData.getData("text").replace(/\D/g, "");
+      if (pastedData.length === 4) {
+        this.digits = pastedData.split("");
+        this.validateCode();
+        this.$refs.inputs[3].focus();
+      } else {
+        this.codeError = "Please paste a valid 4-digit code";
       }
     },
     async verifyCode() {
-      this.validateEmailOrPhone();
+      this.validateCode();
 
-      if (this.emailError) {
+      if (this.codeError) {
         return;
       }
 
@@ -106,13 +152,17 @@ export default {
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const mockUser = "samsoncoded@gmail.com";
+      const mockCode = "1234";
+      const code = this.digits.join("");
 
-      if (this.username === mockUser) {
+      if (code === mockCode) {
         this.error = "";
-        this.$router.push("/verify");
+        this.success = "Code verified successfully!";
+        this.digits = ["", "", "", ""];
+        this.codeError = "";
       } else {
-        this.error = "Invalid email or phone number. Please try again.";
+        this.error = "Invalid code. Please try again.";
+        this.success = "";
       }
 
       this.loading = false;
@@ -149,10 +199,10 @@ export default {
 .login-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+  align-items: flex-start;
+  min-height: calc(100vh - 100px);
   background: transparent;
-  transform: translateY(-30px);
+  margin-top: 100px;
   z-index: 2;
 }
 
@@ -168,8 +218,29 @@ export default {
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
 }
 
+.text-container {
+  text-align: center;
+}
+
 h1 {
-  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: normal;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.instruction {
+  color: #8c8c8c;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
 }
 
 .form-group {
@@ -178,18 +249,26 @@ h1 {
   display: block;
 }
 
-input[type="text"] {
-  width: 100%;
-  padding: 0.75rem;
+.otp-container {
+  display: flex;
+  gap: 0.1rem;
+  justify-content: space-between;
+}
+
+.otp-input {
+  width: 40px;
+  height: 48px;
+  padding: 0;
   background: #333;
   border: none;
   border-radius: 4px;
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.25rem;
+  text-align: center;
   box-sizing: border-box;
 }
 
-input.error-border {
+.otp-input.error-border {
   border: 2px solid #e87c03 !important;
 }
 
@@ -299,6 +378,16 @@ input.error-border {
   box-sizing: border-box;
 }
 
+.success-box {
+  background-color: #28a745;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #fff;
+  box-sizing: border-box;
+}
+
 .error-text {
   color: #e87c03;
   font-size: 0.85rem;
@@ -334,12 +423,23 @@ auth-footer {
   }
 
   .login-container {
-    transform: translateY(-30px);
+    margin-top: 100px;
+    min-height: calc(100vh - 100px);
   }
 
   .login-card {
     padding: 1rem 1rem;
     max-width: 90%;
+  }
+
+  .otp-input {
+    width: 36px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .otp-container {
+    gap: 0.1rem;
   }
 }
 </style>

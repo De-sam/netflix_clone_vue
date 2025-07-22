@@ -16,13 +16,22 @@
 
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
-            <input
-              v-model="code"
-              type="text"
-              placeholder="Enter 6-digit code"
-              @input="validateCode"
-              :class="{ 'error-border': codeError }"
-            />
+            <div class="otp-container">
+              <input
+                v-for="(digit, index) in digits"
+                :key="index"
+                v-model="digits[index]"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                class="otp-input"
+                :class="{ 'error-border': codeError }"
+                @input="handleInput($event, index)"
+                @keydown="handleKeydown($event, index)"
+                @paste="index === 0 ? handlePaste($event) : null"
+                ref="inputs"
+              />
+            </div>
             <div v-if="codeError" class="error-text">
               <svg
                 class="error-icon"
@@ -72,7 +81,7 @@ export default {
   },
   data() {
     return {
-      code: "",
+      digits: ["", "", "", "", "", ""], // Array for six digits
       error: "",
       success: "",
       codeError: "",
@@ -81,11 +90,42 @@ export default {
   },
   methods: {
     validateCode() {
+      const code = this.digits.join("");
       const codeRegex = /^\d{6}$/;
-      if (!codeRegex.test(this.code)) {
+      if (!codeRegex.test(code)) {
         this.codeError = "Please enter a valid 6-digit code";
       } else {
         this.codeError = "";
+      }
+    },
+    handleInput(event, index) {
+      const value = event.target.value;
+      // Allow only single digit
+      if (value && !/^\d$/.test(value)) {
+        this.digits[index] = "";
+        return;
+      }
+      // Move to next input if digit entered and not the last field
+      if (value && index < 5) {
+        this.$refs.inputs[index + 1].focus();
+      }
+      this.validateCode();
+    },
+    handleKeydown(event, index) {
+      // Move to previous input on backspace if field is empty
+      if (event.key === "Backspace" && !this.digits[index] && index > 0) {
+        this.$refs.inputs[index - 1].focus();
+      }
+    },
+    handlePaste(event) {
+      event.preventDefault();
+      const pastedData = event.clipboardData.getData("text").replace(/\D/g, "");
+      if (pastedData.length === 6) {
+        this.digits = pastedData.split("");
+        this.validateCode();
+        this.$refs.inputs[5].focus(); // Focus last input
+      } else {
+        this.codeError = "Please paste a valid 6-digit code";
       }
     },
     async handleSubmit() {
@@ -101,8 +141,9 @@ export default {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const mockCode = "123456";
+      const code = this.digits.join("");
 
-      if (this.code === mockCode) {
+      if (code === mockCode) {
         this.error = "";
         this.success = "Authentication successful";
         this.$emit("success");
@@ -175,14 +216,22 @@ h1 {
   display: block;
 }
 
-input[type="text"] {
-  width: 100%;
-  padding: 0.75rem;
+.otp-container {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.otp-input {
+  width: 40px;
+  height: 48px;
+  padding: 0;
   background: #333;
   border: none;
   border-radius: 4px;
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.25rem;
+  text-align: center;
   box-sizing: border-box;
 }
 
@@ -315,6 +364,12 @@ auth-footer {
   .login-card {
     padding: 1rem 1rem; /* Reduced padding for compact mobile layout */
     max-width: 90%;
+  }
+
+  .otp-input {
+    width: 36px; /* Slightly smaller for mobile */
+    height: 40px;
+    font-size: 1.1rem;
   }
 }
 </style>
