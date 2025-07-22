@@ -15,12 +15,25 @@
   position: absolute;
   top: 0;
   left: 0;
-  padding: 1.5rem 2rem 1.5rem 10rem; /* ⬅️ pushed further right */
+  padding: 1rem 2rem 1rem 3rem; /* Pushed further right for desktop */
   background: transparent;
   z-index: 10;
 }
 
 .logo {
-  width: 160px; /* ⬆️ increased size */
+  width: 160px; /* Default size for desktop */
+  transition: width 0.3s ease; /* Smooth size change */
+}
+
+/* Mobile view adjustments */
+@media (max-width: 600px) {
+  .logo-header {
+    padding: 1rem 0 1rem 2rem; /* Increased left padding to move logo away from edge */
+    background: #000; /* Dark background for mobile view */
+  }
+
+  .logo {
+    width: 120px; /* Slightly smaller logo for mobile */
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="background-wrapper">
+  <div class="two-factor-page">
     <div class="background-overlay"></div>
     <logo-header />
     <div class="login-container">
@@ -119,13 +119,17 @@ export default {
 </script>
 
 <style scoped>
-.background-wrapper {
+.two-factor-page {
   position: relative;
   min-height: 100vh;
+  width: 100vw;
   background-image: url("../assets/background.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .background-overlay {
@@ -135,13 +139,7 @@ export default {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-}
-
-.logo {
-  position: absolute;
-  top: 20px;
-  left: 40px;
-  z-index: 10;
+  z-index: 1;
 }
 
 .login-container {
@@ -151,6 +149,7 @@ export default {
   min-height: 100vh;
   background: transparent;
   transform: translateY(-30px);
+  z-index: 2;
 }
 
 .login-card {
@@ -294,5 +293,28 @@ auth-footer {
   bottom: 0;
   width: 100%;
   z-index: 10;
+}
+
+/* Mobile view adjustments */
+@media (max-width: 600px) {
+  .two-factor-page {
+    background: #000 !important; /* Solid dark background for mobile */
+    background-image: none !important;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .background-overlay {
+    display: none; /* Hide overlay in mobile */
+  }
+
+  .login-container {
+    transform: translateY(-30px); /* Match LoginForm.vue */
+  }
+
+  .login-card {
+    padding: 1rem 1rem; /* Reduced padding for compact mobile layout */
+    max-width: 90%;
+  }
 }
 </style>
