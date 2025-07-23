@@ -1,6 +1,6 @@
 <template>
   <header class="logo-header">
-    <router-link to="/">
+    <router-link to="/" class="logo-link">
       <img
         src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Logonetflix.png"
         alt="Netflix"
@@ -12,28 +12,26 @@
 
 <style scoped>
 .logo-header {
-  position: absolute;
   top: 0;
   left: 0;
-  padding: 1rem 2rem 1rem 3rem; /* Pushed further right for desktop */
-  background: transparent;
-  z-index: 10;
+  padding: 1.2rem 0 0 10.6rem;
+  background: transparent !important;
+  box-shadow: none !important;
+  z-index: 1;
 }
 
 .logo {
-  width: 160px; /* Default size for desktop */
-  transition: width 0.3s ease; /* Smooth size change */
+  width: 158px;
+  transition: width 0.3s ease;
+  filter: brightness(1.1);
 }
 
-/* Mobile view adjustments */
 @media (max-width: 600px) {
   .logo-header {
-    padding: 1rem 0 1rem 2rem; /* Increased left padding to move logo away from edge */
-    background: #000; /* Dark background for mobile view */
+    padding: 1rem 0 0 2rem;
   }
-
   .logo {
-    width: 120px; /* Slightly smaller logo for mobile */
+    width: 110px;
   }
 }
 </style>

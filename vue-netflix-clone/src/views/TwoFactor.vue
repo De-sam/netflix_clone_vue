@@ -81,7 +81,7 @@ export default {
   },
   data() {
     return {
-      digits: ["", "", "", "", "", ""], // Array for six digits
+      digits: ["", "", "", "", "", ""],
       error: "",
       success: "",
       codeError: "",
@@ -100,19 +100,16 @@ export default {
     },
     handleInput(event, index) {
       const value = event.target.value;
-      // Allow only single digit
       if (value && !/^\d$/.test(value)) {
         this.digits[index] = "";
         return;
       }
-      // Move to next input if digit entered and not the last field
       if (value && index < 5) {
         this.$refs.inputs[index + 1].focus();
       }
       this.validateCode();
     },
     handleKeydown(event, index) {
-      // Move to previous input on backspace if field is empty
       if (event.key === "Backspace" && !this.digits[index] && index > 0) {
         this.$refs.inputs[index - 1].focus();
       }
@@ -123,34 +120,39 @@ export default {
       if (pastedData.length === 6) {
         this.digits = pastedData.split("");
         this.validateCode();
-        this.$refs.inputs[5].focus(); // Focus last input
+        this.$refs.inputs[5].focus();
       } else {
         this.codeError = "Please paste a valid 6-digit code";
       }
     },
     async handleSubmit() {
       this.validateCode();
-
-      if (this.codeError) {
-        return;
-      }
+      if (this.codeError) return;
 
       this.loading = true;
+      this.error = "";
+      this.success = "";
 
-      // Simulate async operation (e.g., API call)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const mockCode = "123456";
+      const baseUrl = process.env.VUE_APP_API_BASE_URL;
       const code = this.digits.join("");
 
-      if (code === mockCode) {
-        this.error = "";
-        this.success = "Authentication successful";
-        this.$emit("success");
-      } else {
-        this.error =
-          "Invalid verification code. Please try again or resend a new code.";
-        this.success = "";
+      try {
+        const response = await fetch(`${baseUrl}/otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          this.error = result.error || "OTP failed.";
+        } else {
+          this.success = result.message || "OTP verified!";
+          this.$emit("success"); // or navigate if needed
+        }
+      } catch (err) {
+        this.error = "Server error. Please try again.";
       }
 
       this.loading = false;

@@ -4,56 +4,56 @@
     <logo-header />
     <div class="login-container">
       <div class="login-card">
-        <h1>Sign In with Code</h1>
+        <h1>Sign In</h1>
 
-        <div v-if="error" class="error-box">
-          {{ error }}
-        </div>
+        <div v-if="error" class="error-box">{{ error }}</div>
 
-        <form @submit.prevent="verifyCode">
+        <form @submit.prevent="handleLogin" novalidate>
           <div class="form-group">
             <input
-              v-model="username"
+              v-model.trim="username"
               type="text"
               placeholder="Email or phone number"
               @input="validateEmailOrPhone"
-              :class="{ 'error-border': emailError }"
+              :class="{ error: emailError }"
+              autocomplete="username"
             />
-            <div v-if="emailError" class="error-text">
-              <svg
-                class="error-icon"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-              >
-                <path
-                  fill="#e87c03"
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
-                />
-              </svg>
+            <p v-if="emailError" class="error-text">
               Please enter a valid email or phone number
-            </div>
+            </p>
           </div>
 
-          <button type="submit" class="btn" :disabled="loading">
-            <span v-if="loading" class="spinner"></span>
-            <span v-else>Send Sign-In-Code</span>
-          </button>
+          <div class="form-group password-field">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              placeholder="Password"
+              @input="validatePassword"
+              :class="{ error: passwordError }"
+              autocomplete="current-password"
+            />
+            <button type="button" class="toggle-btn" @click="togglePassword">
+              {{ showPassword ? "🙈" : "👁️" }}
+            </button>
+            <p v-if="passwordError" class="error-text">
+              Your password must be between 8 and 60 characters
+            </p>
+          </div>
+
+          <button type="submit" class="btn">Sign In</button>
 
           <div class="or-divider">OR</div>
 
-          <router-link to="/login" class="router-button">
+          <router-link to="/code" class="router-button">
             <button type="button" class="btn code-btn">
-              Sign in with password
+              Sign in with code
             </button>
           </router-link>
 
-          <p class="message-rates">Message and data rates may apply</p>
-
-          <div class="signup">
+          <p class="signup">
             New to Netflix?
             <a href="#">Sign up now.</a>
-          </div>
+          </p>
 
           <p class="disclaimer">
             This page is protected by Google reCAPTCHA to ensure you're not a
@@ -72,7 +72,7 @@ import LogoHeader from "../components/LogoHeader.vue";
 import AuthFooter from "../components/AuthFooter.vue";
 
 export default {
-  name: "LoginWithCode",
+  name: "LoginView",
   components: {
     LogoHeader,
     AuthFooter,
@@ -80,42 +80,45 @@ export default {
   data() {
     return {
       username: "",
+      password: "",
+      showPassword: false,
+      remember: false,
+      emailError: false,
+      passwordError: false,
       error: "",
-      emailError: "",
-      loading: false,
     };
   },
   methods: {
-    validateEmailOrPhone() {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^\+?\d{10,14}$/;
-      if (!emailRegex.test(this.username) && !phoneRegex.test(this.username)) {
-        this.emailError = "Please enter a valid email or phone number";
-      } else {
-        this.emailError = "";
-      }
+    togglePassword() {
+      this.showPassword = !this.showPassword;
     },
-    async verifyCode() {
+    validateEmailOrPhone() {
+      const emailRegex = /[^@\s]+@[^@\s]+\.[^@\s]+/;
+      const phoneRegex = /^\+?\d{7,15}$/;
+      this.emailError = !(
+        emailRegex.test(this.username) || phoneRegex.test(this.username)
+      );
+    },
+    validatePassword() {
+      this.passwordError = !(
+        this.password &&
+        this.password.length >= 8 &&
+        this.password.length <= 60
+      );
+    },
+    async handleLogin() {
       this.validateEmailOrPhone();
+      this.validatePassword();
 
-      if (this.emailError) {
-        return;
-      }
+      if (this.emailError || this.passwordError) return;
 
-      this.loading = true;
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const mockUser = "samsoncoded@gmail.com";
-
-      if (this.username === mockUser) {
+      try {
+        console.log("Logging in", { u: this.username, p: this.password });
         this.error = "";
-        this.$router.push("/verify");
-      } else {
-        this.error = "Invalid email or phone number. Please try again.";
+        this.$router.push("/");
+      } catch (e) {
+        this.error = "Incorrect password or account doesn't exist.";
       }
-
-      this.loading = false;
     },
   },
 };
@@ -178,7 +181,8 @@ h1 {
   display: block;
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
   width: 100%;
   padding: 0.75rem;
   background: #333;
@@ -189,8 +193,36 @@ input[type="text"] {
   box-sizing: border-box;
 }
 
-input.error-border {
+input.error {
   border: 2px solid #e87c03 !important;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.error-text {
+  color: #e87c03;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.error-box {
+  background-color: #e87c03;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #fff;
+  box-sizing: border-box;
 }
 
 .btn {
@@ -207,31 +239,11 @@ input.error-border {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
 .btn:disabled {
   background: #b2070f;
   cursor: not-allowed;
-}
-
-.spinner {
-  border: 2px solid #fff;
-  border-top: 2px solid transparent;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 .router-button {
@@ -270,13 +282,6 @@ input.error-border {
   margin-left: 0.3rem;
 }
 
-.message-rates {
-  color: #8c8c8c;
-  font-size: 0.75rem;
-  margin-top: 1rem;
-  line-height: 1.4;
-}
-
 .disclaimer {
   color: #8c8c8c;
   font-size: 0.75rem;
@@ -289,30 +294,6 @@ input.error-border {
   text-decoration: none;
 }
 
-.error-box {
-  background-color: #e87c03;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: #fff;
-  box-sizing: border-box;
-}
-
-.error-text {
-  color: #e87c03;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.error-icon {
-  width: 16px;
-  height: 16px;
-}
-
 auth-footer {
   position: absolute;
   bottom: 0;
@@ -320,7 +301,6 @@ auth-footer {
   z-index: 10;
 }
 
-/* Mobile view adjustments */
 @media (max-width: 600px) {
   .login-page {
     background: #000 !important;
