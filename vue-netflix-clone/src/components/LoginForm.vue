@@ -1,151 +1,143 @@
 <template>
-  <div class="login-page">
-    <div class="background-overlay"></div>
-    <logo-header />
-    <div class="login-container">
-      <div class="login-card">
-        <h1>Sign In</h1>
+  <div class="login-container">
+    <div class="login-card">
+      <h1>Sign In</h1>
 
-        <div v-if="error" class="error-box">{{ error }}</div>
+      <div v-if="error" class="error-box">{{ error }}</div>
 
-        <form @submit.prevent="handleLogin" novalidate>
-          <div class="form-group">
-            <input
-              v-model.trim="username"
-              type="text"
-              placeholder="Email or phone number"
-              @input="validateEmailOrPhone"
-              :class="{ error: emailError }"
-              autocomplete="username"
-            />
-            <p v-if="emailError" class="error-text">
-              Please enter a valid email or phone number
-            </p>
-          </div>
-
-          <div class="form-group password-field">
-            <input
-              :type="showPassword ? 'text' : 'password'"
-              v-model="password"
-              placeholder="Password"
-              @input="validatePassword"
-              :class="{ error: passwordError }"
-              autocomplete="current-password"
-            />
-            <button type="button" class="toggle-btn" @click="togglePassword">
-              {{ showPassword ? "🙈" : "👁️" }}
-            </button>
-            <p v-if="passwordError" class="error-text">
-              Your password must be between 8 and 60 characters
-            </p>
-          </div>
-
-          <button type="submit" class="btn">Sign In</button>
-
-          <div class="or-divider">OR</div>
-
-          <router-link to="/code" class="router-button">
-            <button type="button" class="btn code-btn">
-              Sign in with code
-            </button>
-          </router-link>
-
-          <p class="signup">
-            New to Netflix?
-            <a href="#">Sign up now.</a>
+      <form @submit.prevent="handleLogin" novalidate>
+        <div class="form-group">
+          <input
+            v-model.trim="username"
+            type="text"
+            placeholder="Email or phone number"
+            @input="validateEmailOrPhone"
+            :class="{ error: emailError }"
+            autocomplete="username"
+          />
+          <p v-if="emailError" class="error-text">
+            Please enter a valid email or phone number
           </p>
+        </div>
 
-          <p class="disclaimer">
-            This page is protected by Google reCAPTCHA to ensure you're not a
-            bot.
-            <a href="#">Learn more.</a>
+        <div class="form-group password-field">
+          <input
+            :type="showPassword ? 'text' : 'password'"
+            v-model="password"
+            placeholder="Password"
+            @input="validatePassword"
+            :class="{ error: passwordError }"
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-btn" @click="togglePassword">
+            {{ showPassword ? "🙈" : "👁️" }}
+          </button>
+          <p v-if="passwordError" class="error-text">
+            Your password must be between 8 and 60 characters
           </p>
-        </form>
-      </div>
+        </div>
+
+        <button type="submit" class="btn">Sign In</button>
+
+        <div class="or-divider">OR</div>
+
+        <router-link to="/code" class="router-button">
+          <button type="button" class="btn code-btn">Sign in with code</button>
+        </router-link>
+
+        <p class="signup">
+          New to Netflix?
+          <a href="#">Sign up now.</a>
+        </p>
+
+        <p class="disclaimer">
+          This page is protected by Google reCAPTCHA to ensure you're not a bot.
+          <a href="#">Learn more.</a>
+        </p>
+      </form>
     </div>
-    <auth-footer />
   </div>
 </template>
 
 <script>
-import LogoHeader from "../components/LogoHeader.vue";
-import AuthFooter from "../components/AuthFooter.vue";
+import { useAuthStore } from "@/stores/auth";
 
 export default {
   name: "LoginView",
-  components: {
-    LogoHeader,
-    AuthFooter,
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
   },
   data() {
     return {
       username: "",
       password: "",
-      showPassword: false,
-      emailError: false,
-      passwordError: false,
+      rememberMe: false,
       error: "",
+      showPassword: false,
+      emailError: "",
+      passwordError: "",
+      loading: false,
     };
   },
   methods: {
-    togglePassword() {
-      this.showPassword = !this.showPassword;
-    },
     validateEmailOrPhone() {
-      const emailRegex = /[^@\s]+@[^@\s]+\.[^@\s]+/;
-      const phoneRegex = /^\+?\d{7,15}$/;
-      this.emailError = !(
-        emailRegex.test(this.username) || phoneRegex.test(this.username)
-      );
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?\d{10,14}$/;
+      this.emailError =
+        !emailRegex.test(this.username) && !phoneRegex.test(this.username)
+          ? "Please enter a valid email or phone number"
+          : "";
     },
     validatePassword() {
-      this.passwordError = !(
-        this.password &&
-        this.password.length >= 8 &&
-        this.password.length <= 60
-      );
+      this.passwordError =
+        this.password.length < 4 || this.password.length > 60
+          ? "Your password must be between 4 and 60 characters"
+          : "";
     },
     async handleLogin() {
       this.validateEmailOrPhone();
       this.validatePassword();
-
       if (this.emailError || this.passwordError) return;
 
+      this.loading = true;
+      this.error = "";
+
+      const baseUrl = process.env.VUE_APP_API_BASE_URL;
+
       try {
-        this.error = "";
-        this.$router.push("/");
-      } catch (e) {
-        this.error = "Incorrect password or account doesn't exist.";
+        const response = await fetch(`${baseUrl}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: this.username,
+            password: this.password,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          this.error = result.error || "Login failed. Please try again.";
+        } else {
+          this.authStore?.login?.("demo");
+          this.$router.push("/2fa"); // or dashboard or wherever
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        this.error = "Server error. Please try again later.";
       }
+
+      this.loading = false;
+    },
+    togglePassword() {
+      this.showPassword = !this.showPassword;
     },
   },
 };
 </script>
 
 <style scoped>
-.login-page {
-  position: relative;
-  min-height: 100vh;
-  width: 100vw;
-  background-image: url("@/assets/background.webp");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.background-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1;
-}
-
 .login-container {
   display: flex;
   justify-content: center;
@@ -166,7 +158,6 @@ export default {
   text-align: left;
   box-sizing: border-box;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
-  z-index: 5;
 }
 
 h1 {
@@ -239,11 +230,6 @@ input.error {
   justify-content: center;
 }
 
-.btn:disabled {
-  background: #b2070f;
-  cursor: not-allowed;
-}
-
 .router-button {
   display: block;
   width: 100%;
@@ -292,25 +278,7 @@ input.error {
   text-decoration: none;
 }
 
-auth-footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  z-index: 10;
-}
-
 @media (max-width: 600px) {
-  .login-page {
-    background: #000 !important;
-    background-image: none !important;
-    width: 100vw;
-    height: 100vh;
-  }
-
-  .background-overlay {
-    display: none;
-  }
-
   .login-container {
     transform: translateY(-30px);
   }
