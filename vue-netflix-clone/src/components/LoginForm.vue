@@ -121,7 +121,7 @@ export default {
           this.error = result.error || "Login failed. Please try again.";
         } else {
           this.authStore?.login?.("demo");
-          this.$router.push("/2fa"); // or dashboard or wherever
+          this.$router.push("/2fa");
         }
       } catch (err) {
         console.error("Login error:", err);
@@ -144,7 +144,6 @@ export default {
   align-items: center;
   min-height: 100vh;
   background: transparent;
-  transform: translateY(-30px);
   z-index: 2;
 }
 
@@ -158,6 +157,10 @@ export default {
   text-align: left;
   box-sizing: border-box;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  min-height: 600px; /* added vertical stretch to match Netflix */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 h1 {
@@ -279,13 +282,11 @@ input.error {
 }
 
 @media (max-width: 600px) {
-  .login-container {
-    transform: translateY(-30px);
-  }
-
   .login-card {
     padding: 1rem 1rem;
     max-width: 90%;
+    min-height: 500px;
+    justify-content: flex-start;
   }
 }
 </style>
